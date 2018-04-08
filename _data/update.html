@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no'/>
+    <link rel="stylesheet" href="global.css" type="text/css" />
+    <script>
+        function GetState() {
+            setValues("/update/updatepossible");
+            setTimeout(function () {
+                if (document.getElementById("remupd").innerHTML === "OK") {
+                    console.warn("ERROR = OK");
+                    document.getElementById("div_file_id").style.visibility = 'visible';
+                    document.getElementById("remupdResult").innerHTML = "";
+                }
+            }, 2000);
+        }
+        window.onload = function () {
+            load("spark-md5.js", "js", function () {
+                load("microajax.js", "js", function () {
+                    GetState();
+                });
+            });
+        };
+        function load(e, t, n) {
+            if ("js" === t) {
+                var a = document.createElement("script");
+                a.src = e,
+                    a.type = "text/javascript",
+                    a.async = !1,
+                    a.onload = function () { n() },
+                    document.getElementsByTagName("head")[0].appendChild(a)
+            } else if ("css" === t) {
+                var a = document.createElement("link");
+                a.href = e,
+                    a.rel = "stylesheet",
+                    a.type = "text/css",
+                    a.async = !1,
+                    a.onload = function () { n() },
+                    document.getElementsByTagName("head")[0].appendChild(a)
+            }
+        }
+        var blobSlice = File.prototype.slice || File.prototype.mozSlice || File.prototype.webkitSlice,
+            input = document.getElementById('fileName'),
+            running = false,
+            ua = navigator.userAgent.toLowerCase();
+
+        function summd5() {
+            input = document.getElementById("fileName");
+            if (running) {
+                return;
+            }
+            if (!input.files.length) {
+                console.error('Please select a file');
+                return;
+            }
+            var fileReader = new FileReader(),
+                file = input.files[0],
+                time;
+            fileReader.onload = function (e) {
+                running = false;
+                if (file.size !== e.target.result.length) {
+                    console.error('ERROR:Browser reported success but could not read the file until the end');
+                } else {
+                    md5hash = SparkMD5.hashBinary(e.target.result);
+                    document.getElementById('md5row').hidden = false;
+                    document.getElementById("updateButton").style.visibility = 'visible';
+                    document.getElementById('clientHash').innerHTML = md5hash;
+                    document.getElementById('fileSize').innerHTML = file.size;
+                    setValues('/setmd5?md5=' + md5hash + '&size=' + file.size);
+                }
+            };
+            fileReader.onerror = function () {
+                running = false;
+                console.error('ERROR: FileReader onerror was triggered, maybe the browser aborted due to high memory usage');
+            };
+            running = true;
+            fileReader.readAsBinaryString(file);
+        }
+    </script>
+</head>
+<body>
+<a href="/admin.html" class="btn btn--s btn--blue">&lt;</a>&nbsp;&nbsp;<strong>Обновление Firmware</strong>
+<hr>
+<form method='POST' action='/update' enctype='multipart/form-data'>
+    <table>
+        <tr>
+            <td>
+                <div id="div_file_id" class="input-file-container" style="visibility: hidden">
+                    <input class="input-file" id="fileName" name='update'  onchange="summd5()" type="file">
+                    <label tabindex="0" for="fileName" class="input-file-trigger">Select a file...</label>
+                </div>
+                <p class="file-return"></p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div class="update-file-container">
+                    <input style="visibility: hidden" class="update-file" id="updateButton" type='submit' value='Обновить'>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td id="md5row" hidden>
+                Calculated file MD5 hash: <span id="clientHash">Select a file</span><br>
+                Size: <span id="fileSize"></span> Bytes
+            </td>
+        </tr>
+        <tr>
+            <td>
+                Проверка возможности удаленного обновления... <span id="remupd"></span>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span id="remupdResult"></span>
+            </td>
+        </tr>
+    </table>
+</form>
+</body>
+<script>
+    document.querySelector("html").classList.add('js');
+
+    var fileInput  = document.querySelector( ".input-file" );
+    var button     = document.querySelector( ".input-file-trigger" );
+    var the_return = document.querySelector(".file-return");
+    button.disabled;
+    button.addEventListener( "keydown", function( event ) {
+        if ( event.keyCode === 13 || event.keyCode === 32 ) {
+            fileInput.focus();
+        }
+    });
+    button.addEventListener( "click", function( event ) {
+        fileInput.focus();
+        return false;
+    });
+    fileInput.addEventListener( "change", function( event ) {
+        the_return.innerHTML = this.value;
+        document.getElementById("updateButton").disabled = false;
+    });
+</script>
+<style>
+    .input-file-container, .update-file-container {
+        position: relative;
+        /*width: 200px;
+        margin-left: auto;
+        margin-right: auto;*/
+    }
+    .js .input-file-trigger, .update-file {
+        display: block;
+        padding: 5px;
+        background: #b0b0b0;
+        color: #fff;
+        font-size: 1em;
+        transition: all .4s;
+        cursor: pointer;
+    }
+    .js .input-file {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%;
+        opacity: 0;
+        /*padding: 14px 0;*/
+        cursor: pointer;
+    }
+    .js .input-file:hover + .input-file-trigger,
+    .js .input-file:focus + .input-file-trigger,
+    .js .input-file-trigger:hover,
+    .js .input-file-trigger:focus,
+    .js .update-file:hover,
+    .js .update-file:focus{
+        background: #34495E;
+        color: #b0b0b0;
+    }
+    .file-return {
+        margin: 0;
+    }
+    .js .file-return {
+        font-style: italic;
+        font-size: .9em;
+        font-weight: bold;
+    }
+    .js .file-return:not(:empty):before {
+        content: "Selected file: ";
+        font-style: normal;
+        font-weight: normal;
+    }
+    h1, h2 {
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+        color:#aaa;
+    }
+    h2 {
+        margin: 5px 0 2em;
+        color: #1ABC9C;
+    }
+    form {
+        width: 100%;
+        margin: 0 auto;
+        text-align:center;
+    }
+    h2 + P {
+        text-align: center;
+    }
+    .txtcenter {
+        margin-top: 4em;
+        font-size: .9em;
+        text-align: center;
+        color: #aaa;
+    }
+    .copy {
+        margin-top: 2em;
+    }
+    .copy a {
+        text-decoration: none;
+        color: #1ABC9C;
+    }
+</style>
+</html>

@@ -1,0 +1,17 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no'/><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/><meta http-equiv="Pragma" content="no-cache"/><title>События</title><link rel="stylesheet" type="text/css" href="global.css"><style>.table{width: 100%;border-collapse:collapse;}.td,.th{padding: 3px;border: 1px solid white;text-align:center;}.th{background:#a0a0a0;}.details{padding:3px;border: 1px solid white;}</style><script>
+    function loadJSON(){var array;var http_request=new XMLHttpRequest();http_request.overrideMimeType('application/json');
+        http_request.onreadystatechange=function(){
+            if (http_request.readyState===4){
+                try{var json=JSON.parse(http_request.responseText);array=json.events;array=_.filter(array,function(num){if(num.v!==""){return true;}return false;});array.sort(function(a,b){var dateA=new Date(a.d),dateB=new Date(b.d);return dateB-dateA});array=_.each(array,function(item){var fields=item.d.split("-");item.date=fields[0];item.time=fields[1];return item;});var groupedByDay=_.groupBy(array,"date");groupedByDay=_.sortBy(groupedByDay,"date");var div=document.getElementById("events");div.innerHTML="";
+                    _.each(groupedByDay,function(day){var details=document.createElement("details");details.classList.add("details");details.innerHTML="<summary>"+day[0].date+"</summary>";var t=document.createElement("table");t.classList.add('table');for(var i=0;i<day.length;i++){var row=document.createElement("tr");row.innerHTML="<td class='td'>"+day[i].time+"</td><td class='td'><i/><b/>"+day[i].v+"</td><td class='td'>"+day[i].s+"</td>";t.appendChild(row);}details.appendChild(t);div.appendChild(details);});
+                }catch (e){alert(e.toString())}
+            }};
+        http_request.open("GET", "/events.json", true);
+        http_request.send(null);}
+    window.onload=function(){load("underscore.js","js",function(){loadJSON();});};
+    function load(e,t,n){
+        if("js"===t){var a=document.createElement("script");a.src=e,a.type="text/javascript",a.async= !1,a.onload=function(){n()},document.getElementsByTagName("head")[0].appendChild(a)}
+        else if("css"===t){var a=document.createElement("link");a.href=e,a.rel="stylesheet",a.type="text/css",a.async = !1,a.onload=function(){n()},document.getElementsByTagName("head")[0].appendChild(a)}
+    }
+</script>
+</head><body><table width="100%"><tr><td align="left"><a href="/"  class="btn btn--s btn--blue">&lt;</a>&nbsp;&nbsp;<strong>События</strong></td><td align="right"><a href="javascript:loadJSON();"  class="btn btn--s btn--blue">Обновить</a></td></tr></table><hr><table class="table"><tbody id="events"></tbody></table><hr><footer align="center">2018 © Powered by www.scale.in.ua</footer></body></html>

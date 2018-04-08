@@ -1,0 +1,68 @@
+html{
+    background: #ffffff;
+}
+body{
+    font-family: Arial, sans-serif;
+    width: 330px;
+    height: auto;
+    margin-right: auto;
+    margin-left: auto;
+    border: 5px solid #d3d3d3;
+    background: #d3d3d3;
+}
+h1{
+    margin: inherit;
+}
+h2{
+    margin: auto;
+}
+h4,h5{
+    margin: auto;
+}
+fieldset{
+    background: #c1c1c1;
+    border: 0px;
+}
+#brand_name{
+    color: white;
+    text-align: right;
+}
+img{
+    width:auto;
+    height:30px;
+}
+footer{
+    font-family: Arial, sans-serif;
+    font-size: small;
+}
+.btn, .btn:link, .btn:visited {
+    display: inline-block;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+.btn:hover, .btn:focus {
+    color: white;
+}
+.btn--s {
+    padding: 0.5em;
+}
+.btn--m {
+    padding: 0.5em;
+    width: 100%;
+    padding-left: 0px;
+    padding-right: 0px;
+}
+.btn--full, .btn--full:link {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+    width: 100%;
+}
+.btn--blue:link, .btn--blue:visited {
+    background-color: #c1c1c1;
+}
+.btn--blue:hover, .btn--blue:focus {
+    background-color: #a0a0a0;
+}
+

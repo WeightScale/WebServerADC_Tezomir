@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no'/>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+    <meta http-equiv="Pragma" content="no-cache"/>
+    <title>Калибровка</title>
+    <link rel="shortcut icon" href="favicon.png" type="image/png">
+    <link rel="stylesheet" type="text/css" href="global.css">
+    <style>
+        #wt_id{
+            display:inline;
+            background: #fff;
+            font-size: 28px;
+            font-family: Arial,sans-serif;
+            color: #618ad2;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        table {width: 100%;}
+        input{
+            width: 100%;text-align: right;
+            font-size:18px;
+            height:auto;
+        }
+        input[type="submit"]{
+            width: auto;
+        }
+        select{
+            width:100%;text-align-last:right;
+            font-size:18px;
+            height:auto;
+            border:1px solid #ccc;
+        }
+    </style>
+    <script>
+        var requestWeight = null;
+        var weight;
+        function go() {
+            document.getElementById('wt_id').innerHTML = '---';
+            getWeight();
+        }
+        function setMax(){
+            var form = document.getElementById("form_c_id");
+            var formData = new FormData(form);
+            formData.append('update', true);
+            var request = new XMLHttpRequest();
+            request.onreadystatechange = function(){
+                if (this.readyState === 4 && this.status === 200){
+                    if (this.responseText !== null){
+                        document.getElementById('form_max').disabled = true;
+                        var f = document.createElement('fieldset');
+                        f.id = 'form_zero';
+                        f.innerHTML = "<legend>Нулевой вес</legend>" +
+                            "<form  action='javascript:setZero()'><p>Перед установкой убедитесь что весы не нагружены.</p><input type='submit' value='УСТАНОВИТЬ НОЛЬ'/></form>"+
+                            "<br><div id='wt_id'>---</div>";
+                        document.body.appendChild(f);
+                        setupWeight();
+                    }
+                }
+            };
+            request.open('POST','calibr.html',true);
+            request.send(formData);
+        }
+        function setZero(){
+            var request = new XMLHttpRequest();
+            var formData = new FormData();
+            formData.append('zero', true);
+            formData.append('weightCal', "0");
+            request.onreadystatechange = function(){
+                if (this.readyState === 4 && this.status === 200){
+                    if (this.responseText !== null){
+                        document.getElementById('form_zero').disabled = true;
+                        var f = document.createElement('fieldset');
+                        f.id = 'form_weight';
+                        f.innerHTML = "<legend>Калиброваный вес</legend>" +
+                            "<form action='javascript:setWeight()'><p>Перед установкой весы нагружаются контрольным весом. Дать некоторое время для стабилизации.Значение вводится с точностью которое выбрано в пункте Точность измерения.</p>" +
+                            "<table><tr><td>ГИРЯ:</td><td><input id=\"gr_id\" value='0' type='number' step='any' required placeholder='Калиброваная гиря'/></td></tr>"+
+                            "<tr><td>ГРУЗ:</td><td><input id='id_cal_wt' value='0' type='number' step='any' title='Введите значение веса установленого на весах'  max='100000' required placeholder='Калиброваный вес'/></td></tr>" +
+                            "<tr><td>ОШИБКА:</td><td><div id=\"dif_gr_id\"></div></td></tr>"+
+                            "<tr><td><input type='submit' value='УСТАНОВИТЬ'/></td><td><a href=\"javascript:calculate();\">подобрать</a></td></tr></table></form>";
+                        document.body.appendChild(f);
+                    }
+                }
+            };
+            request.open('POST','calibr.html',true);
+            request.send(formData);
+        }
+        function setWeight(){
+            var formData = new FormData();
+            var w = parseFloat(document.getElementById('id_cal_wt').value) + parseFloat(document.getElementById('gr_id').value);
+            formData.append('weightCal', w.toString());
+            var request = new XMLHttpRequest();
+            request.onreadystatechange = function(){
+                if (this.readyState === 4){
+                    if(this.status === 200){
+                        if (this.responseText !== null){
+                            //document.getElementById('form_weight').disabled = true;
+                            if(document.getElementById("form_seal") === null){
+                                var f = document.createElement('fieldset');
+                                f.id = 'form_seal';
+                                f.innerHTML = "<legend>Пломбировка</legend>" +
+                                    "<form action='javascript:setSeal()'><left><p>Сохранение процесса калибровки. Данные калибровки сохраняются в память весов.</p>" +
+                                    "<input type='submit' value='ОПЛОМБИРОВАТЬ'/></left></form>";
+                                document.body.appendChild(f);
+                            }
+                        }
+                    }else if(this.status === 400){
+                        alert(this.responseText);
+                    }
+                }
+            };
+            request.open('POST','calibr.html',true);
+            request.send(formData);
+        }
+        function setSeal(){
+            var request = new XMLHttpRequest();
+            request.onreadystatechange = function(){
+                if (this.readyState === 4 && this.status === 200){
+                    alert("Номер пломбы: " + this.responseText);
+                    window.location.replace("/");
+                }
+            };
+            request.open('GET','/sl',true);
+            request.send(null);
+        }
+        function GetSettings() {
+            var http_request = new XMLHttpRequest();
+            http_request.overrideMimeType('application/json');
+            http_request.onreadystatechange = function(){
+                if (http_request.readyState === 4  ){
+                    try {
+                        var json = JSON.parse(http_request.responseText);
+                        for (entry in json) {
+                            try {
+                                if(document.getElementById(entry)!== null)
+                                    document.getElementById(entry).value=json[entry];
+                            }catch(e) {}
+
+                        }
+                    }catch (e){
+                        alert(e.toString());
+                    }
+                    document.body.style.visibility = 'visible';
+                }
+            };
+            http_request.open("GET", "/cdate.json", true);
+            http_request.send(null);
+        }
+        window.onload = function () {
+            GetSettings();
+        };
+        function saveValue(){
+            var form = document.getElementById("form_c_id");
+            var formData = new FormData(form);
+            formData.append('update', true);
+            var http_request = new XMLHttpRequest();
+            http_request.onreadystatechange = function(){
+                if (this.readyState === 4 && this.status === 200){
+                    if (this.responseText !== null){
+                        window.open("/","_self");
+                    }
+                }
+            };
+            http_request.onerror = function(){alert("Ошибка");};
+            http_request.open('POST','calibr.html',true);
+            http_request.send(formData);
+        };
+        function getWeight(){
+            if((navigator.userAgent.indexOf("MSIE") !== -1 ) || (!!document.documentMode === true )){
+                requestWeight.open('GET','/wt?buster='+new Date().getTime(),true);
+            }else{
+                requestWeight.open('GET','/wt',true);
+            }
+            requestWeight.timeout = 5000;
+            requestWeight.send(null);
+        }
+        function calculate(){
+            var dif = weight - parseFloat(document.getElementById('id_cal_wt').value);
+            dif = parseFloat(document.getElementById('gr_id').value) / dif;
+            dif =  parseFloat(document.getElementById('id_cal_wt').value) * dif;
+            document.getElementById('id_cal_wt').value = dif.toFixed(document.getElementById('ac_id').value);
+            setWeight();
+        }
+        function handleWeight() {
+            if (this.readyState === 4 && this.status === 200){
+                if (this.responseText !== null){
+                    var json = JSON.parse(requestWeight.responseText);
+                    weight = json.w;
+                    document.getElementById('wt_id').innerHTML = weight;
+                    try {
+                        document.getElementById('form_seal').disabled = json.s === 0;
+                    }catch (e){}
+
+                    if(json.s){
+                        document.getElementById('wt_id').setAttribute('style', 'background: #fff;');
+                    }else{
+                        document.getElementById('wt_id').setAttribute('style', 'background: #C4C4C4;');
+                    }
+                    try {
+                        var dif_gr = parseFloat(document.getElementById('id_cal_wt').value) + parseFloat(document.getElementById('gr_id').value);
+                        dif_gr -= weight;
+                        document.getElementById('dif_gr_id').innerHTML = dif_gr.toFixed(document.getElementById('ac_id').value);
+                    }catch (e){}
+                    getWeight();
+                }
+            }
+        }
+        function setupWeight() {
+            try{
+                requestWeight = new XMLHttpRequest();
+            }catch (e){
+                try{
+                    requestWeight = new ActiveXObject("Msxml2.XMLHTTP");
+                }catch (e) {
+                    try{
+                        requestWeight = new ActiveXObject("Microsoft.XMLHTTP");
+                    }catch (e){
+                        alert("Your browser broke!");
+                        return false;
+                    }
+                }
+            }
+            requestWeight.onreadystatechange = handleWeight;
+            requestWeight.ontimeout = function(){go();};
+            requestWeight.onerror = function(){go();};
+            getWeight();
+        }
+    </script>
+</head>
+<body style="visibility: hidden">
+<a href="/settings.html" class="btn btn--s btn--blue">&lt;</a>&nbsp;&nbsp;<strong>Калибровка</strong>
+<hr>
+<fieldset id="form_max" style="visibility: visible">
+    <legend>Общии настройки</legend>
+    <form id="form_c_id" action='javascript:setMax()'>
+        <table>
+            <tr>
+                <td>Точность измерения</td>
+                <td>
+                    <select id="ac_id" name='weightAccuracy' title="Выбор точности с которым будет измерения">
+                        <option name="0" value="0"> 0 </option>
+                        <option name="0.0" value="1"> 0.0 </option>
+                        <option name="0.00" value="2"> 0.00 </option>
+                        <option name="0.000" value="3"> 0.000 </option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>Шаг измерения</td>
+                <td>
+                    <select id="st_id" name='weightStep' title="Выбор шага измерения">
+                        <option name="шаг 1" value="1"> 1 </option>
+                        <option name="шаг 5" value="5"> 5 </option>
+                        <option name="шаг 10" value="10"> 10 </option>
+                        <option name="шаг 20" value="20"> 20 </option>
+                        <option name="шаг 50" value="50"> 50 </option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>Кол-во измерений</td>
+                <td>
+                    <select id="av_id" name='weightAverage' title="Выбор количества измерений АЦП">
+                        <option name="одно" value="1">ОДИН</option>
+                        <option name="два" value="2">ДВА</option>
+                        <option name="пять" value="5">ПЯТЬ</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>Фильтр</td>
+                <td>
+                    <select id="fl_id" name='weightFilter' title="Выбор значения фильтра. Чем меньше значение тем лутшее фильтрация но дольше измерение">
+                        <option name="5%" value="5">5 %</option>
+                        <option name="10%" value="10">10 %</option>
+                        <option name="20%" value="20">20 %</option>
+                        <option name="30%" value="30">30 %</option>
+                        <option name="40%" value="40">40 %</option>
+                        <option name="50%" value="50">50 %</option>
+                        <option name="60%" value="60">60 %</option>
+                        <option name="70%" value="70">70 %</option>
+                        <option name="80%" value="80">80 %</option>
+                        <option name="90%" value="90">90 %</option>
+                        <option name="100%" value="100">100 %</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>НВП</td>
+                <td><input title="Введите значение максимального веса" type='number' min='1' max='100000' id='mw_id' name='weightMax' placeholder='Найбольший предел'></td>
+            </tr>
+            <tr>
+                <td><a href="javascript:saveValue();">сохранить и выйти</a></td>
+                <td><input type='submit' value='ДАЛЬШЕ >>'/></td>
+
+            </tr>
+        </table>
+    </form>
+</fieldset>
+<fieldset>
+    <details>
+        <summary>Авторизация для калибровки</summary>
+        <form method='POST'>
+            <table>
+                <tr><td>ИМЯ:</td><td><input id="us_id" name="user" placeholder='имя админ'></td></tr>
+                <tr><td>ПАРОЛЬ:</td><td><input type="password" id="ps_id" name="pass" placeholder='пароль админ'></td></tr>
+                <tr><td></td><td><input type='submit' value='СОХРАНИТЬ'/></td></tr>
+            </table>
+        </form>
+    </details>
+</fieldset>
+</body>
+</html>

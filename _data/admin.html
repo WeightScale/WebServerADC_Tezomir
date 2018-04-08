@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Администрация</title>
+    <meta charset="UTF-8">
+    <meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no'/>
+    <link rel="stylesheet" href="global.css" type="text/css" />
+    <style>
+        table {width: 100%;}
+    </style>
+    <script>
+        function submitFrm(frm) {
+            if ((document.getElementById("user").value !== "") && (document.getElementById("pass").value !== "")) {
+                console.log("User: " + document.getElementById("user").value);
+                console.log("Pass: " + document.getElementById("pass").value);
+                frm.submit();
+            } else {
+                document.getElementById("submitResult").innerHTML = "Имя или пароль неверный";
+            }
+        }
+        function restartESP() {
+            setValues("/admin/restart");
+        }
+        function GetState() {
+            var http_request = new XMLHttpRequest();
+            http_request.overrideMimeType('application/json');
+            http_request.onreadystatechange = function(){
+                if (http_request.readyState === 4  ){
+                    var json = JSON.parse(http_request.responseText);
+                    for (var entry in json) {
+                        if(document.getElementById(entry)!== null){
+                            document.getElementById(entry).value=json[entry];
+                        }
+                    }
+                    document.body.style.visibility = 'visible';
+                }
+            };
+            http_request.open("GET", "/secret.json", true);
+            http_request.send(null);
+        }
+        window.onload = function () {
+            load("microajax.js", "js", function () {
+                GetState();
+            });
+        };
+        function load(e, t, n) {
+            if ("js" === t) {
+                var a = document.createElement("script");
+                a.src = e,
+                    a.type = "text/javascript",
+                    a.async = !1,
+                    a.onload = function () { n() },
+                    document.getElementsByTagName("head")[0].appendChild(a)
+            } else if ("css" === t) {
+                var a = document.createElement("link");
+                a.href = e,
+                    a.rel = "stylesheet",
+                    a.type = "text/css",
+                    a.async = !1,
+                    a.onload = function () { n() },
+                    document.getElementsByTagName("head")[0].appendChild(a)
+            }
+        }
+    </script>
+</head>
+<body style="visibility: hidden">
+<a href="/"  class="btn btn--s btn--blue">&lt;</a>&nbsp;&nbsp;<strong>Администрация</strong>
+<hr>
+<form>
+    <div>
+        <table border="0"  cellspacing="0" cellpadding="3">
+            <tr>
+                <td><a href="/editor.html" class="btn btn--m btn--blue">Редактор файлов</a></td>
+            </tr>
+            <tr>
+                <td colspan="2"><a href="/update" class="btn btn--m btn--blue">Обновление ПО</a></td>
+            </tr>
+            <tr>
+                <td><a href="/admin/restart" class="btn btn--m btn--blue">Перегрузка</a></td>
+            </tr>
+        </table>
+    </div>
+</form>
+<form id="wwwAuthForm" action="">
+    <table border="0" cellspacing="0" cellpadding="3">
+        <tr>
+            <td>ИМЯ:</td>
+            <td><input id="user" name="wwwuser" value=""></td>
+        </tr>
+        <tr>
+            <td>ПАРОЛЬ:</td>
+            <td><input type="password" id="pass" name="wwwpass" value=""></td>
+        </tr>
+        <tr><td colspan="2" align="center"><a href='javascript:submitFrm(document.forms["wwwAuthForm"])' class="btn btn--m btn--blue">Save</a></td></tr>
+    </table>
+</form>
+<table border="0" cellspacing="0" cellpadding="3">
+    <tr><td id="submitResult"></td></tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,17 @@
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.td, .th {
+    padding: 3px;
+    border: 1px solid white;
+    text-align: center;
+}
+.th {
+    background: #a0a0a0;
+}
+.details {
+    padding: 3px;
+    border: 1px solid white;
+}

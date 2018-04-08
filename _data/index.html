@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no'/>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+    <meta http-equiv="Pragma" content="no-cache"/>
+    <title>WEB SCALES</title>
+    <link rel="stylesheet" type="text/css" href="global.css">
+    <link rel="shortcut icon" href="favicon.png" type="image/png">
+    <style>
+        #w_style{
+            background: #fff;
+            font-size: 80px;
+            font-family: Arial,sans-serif;
+            color: #618ad2;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        table {width: 100%;}
+        input{font-size:20px; text-align:center;}
+    </style>
+    <script>
+        var requestWeight = null;
+        function go() {
+            document.getElementById('weight').innerHTML = '---';
+            document.getElementById('charge_id').innerHTML = '--%';
+            document.getElementById('buttonZero').style.visibility = 'visible';
+            getWeight();
+        }
+
+        function getWeight(){
+            if((navigator.userAgent.indexOf("MSIE") !== -1 ) || (!!document.documentMode === true )){
+                requestWeight.open('GET','/wt?buster='+new Date().getTime(),true);
+            }else{
+                requestWeight.open('GET','/wt',true);
+            }
+            requestWeight.timeout = 5000;
+            requestWeight.send(null);
+        }
+
+        function handleWeight() {
+            if (this.readyState === 4 && this.status === 200){
+                if (this.responseText !== null){
+                    var json = JSON.parse(requestWeight.responseText);
+                    document.getElementById('weight').innerHTML = json.w;
+                    document.getElementById('charge_id').innerHTML = json.c+'%';
+                    if(json.s){
+                        document.getElementById('w_style').setAttribute('style', 'background: #fff;');
+                    }else{
+                        document.getElementById('w_style').setAttribute('style', 'background: #C4C4C4;');
+                    }
+                    getWeight();
+                }
+            }
+        }
+
+        function setZero(){
+            document.getElementById('buttonZero').style.visibility = 'hidden';
+            var request = new XMLHttpRequest();
+            document.getElementById('weight').innerHTML = "...";
+            requestWeight.abort();
+            request.onreadystatechange = function(){
+                if (this.readyState === 4 && this.status === 204){
+                    document.getElementById('buttonZero').style.visibility = 'visible';
+                    getWeight();
+                }};
+            request.open('GET','/tp',true);
+            request.timeout = 5000;
+            request.ontimeout = function(){go();};
+            request.onerror = function(){go();};
+            request.send(null);
+        }
+        window.onload = function () {
+            try{
+                requestWeight = new XMLHttpRequest();
+            }catch (e){
+                try{
+                    requestWeight = new ActiveXObject("Msxml2.XMLHTTP");
+                }catch (e) {
+                    try{
+                        requestWeight = new ActiveXObject("Microsoft.XMLHTTP");
+                    }catch (e){
+                        alert("Your browser broke!");
+                        return false;
+                    }
+                }
+            }
+            requestWeight.onreadystatechange = handleWeight;
+            requestWeight.ontimeout = function(){go();};
+            requestWeight.onerror = function(){go();};
+            getWeight();
+        };
+    </script>
+</head>
+<body >
+<div align="center">
+    <table>
+        <tr><td><img src="logo.png" style="height: 42px;"/></td><td align="right"><h3 id="brand_name">scale.in.ua</h3></td></tr>
+    </table>
+    <p hidden="hidden" id='dnt'></p>
+</div>
+<hr>
+<div align='right' id='w_style'>
+    <b id='weight'>---</b>
+</div>
+<hr>
+<table>
+    <tr><td style="width:1%; white-space: nowrap"><img src="battery.png" alt="B"/></td><td><h3 id="charge_id" style="display: inline">--%</h3></td><td align="right"><b><a href="javascript:setZero()" id="buttonZero" class="btn btn--s btn--blue">&lt;0&gt;</a></b></td></tr>
+</table>
+<hr>
+<table>
+    <tr><td><a href='/events.html' class="btn btn--m btn--blue">события</a><br></td></tr>
+    <tr><td><br/><a href='/settings.html'>настройки</a><br></td></tr>
+</table>
+<hr>
+<footer align="center">2018 © Powered by KONST</footer>
+</body>
+</html>

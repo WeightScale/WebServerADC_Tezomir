@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no'/>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+    <meta http-equiv="Pragma" content="no-cache"/>
+    <title>Настройки</title>
+    <link rel="stylesheet" type="text/css" href="global.css">
+    <style>
+        input:focus {
+            background: #FA6;
+            outline: none;
+        }
+        table {width: 100%;}
+        input{
+            width:100%;text-align: right;
+            font-size:18px;
+        }
+        input[type=submit]{
+            width:auto;
+        }
+    </style>
+    <script>
+        function setOnBlur( input){
+            setTimeout( function(){
+                if (document.activeElement===input) {
+                    input.onblur=function(){
+                        if(input.value.length === 0 || !CheckIP(input)){
+                            setTimeout( function(){input.focus()},0)
+                        }else
+                            input.onblur=null
+                    }
+                }
+            },0)
+        }
+        function CheckIP(input){
+            ipParts = input.value.split(".");
+            if(ipParts.length===4){
+                for(i=0;i<4;i++){
+                    TheNum = parseInt(ipParts[i]);
+                    if(TheNum >= 0 && TheNum <= 255){}
+                    else{break;}
+                }
+                if(i==4)
+                    return true;
+            }
+            return false;
+        }
+        function sendDateTime(){
+            var formData = new FormData();
+            var date = new Date();
+            var d = date.toLocaleDateString();
+            d+="-"+date.toLocaleTimeString();
+            formData.append('data', d.replace(/[^\x20-\x7E]+/g, ''));
+            var request = new XMLHttpRequest();
+            request.onreadystatechange = function(){
+                if (this.readyState === 4 && this.status === 200){
+                    if (this.responseText !== null){
+                        document.getElementById('id_date').innerHTML = "<div>Обновлено<br/>" + this.responseText + "</div>";
+                    }
+                }
+            };
+            request.open("POST","settings.html?"+new Date().getTime(),true);
+            request.send(formData);
+        }
+        function saveServerValue(){
+            document.getElementById('id_submit_code').disabled = true;
+            var formData = new FormData();
+            formData.append("host", document.getElementById('id_host').value);
+            formData.append("email", document.getElementById('id_email').value);
+            formData.append("password", document.getElementById('id_password').value);
+            formData.append("pin", document.getElementById('id_pin').value);
+            var request = new XMLHttpRequest();
+            request.onreadystatechange = function(){
+                if (this.readyState === 4 ){
+                    if (this.status === 200){
+                        document.getElementById('id_submit_code').value='СОХРАНИЛИ';
+                    }else if (this.status === 400){
+                        document.getElementById('id_submit_code').value = this.responseText;
+                    }
+                    document.getElementById('id_submit_code').disabled = false;
+                }
+            };
+            request.open('POST','/settings.html',true);
+            request.send(formData);
+        }
+        function GetSettings() {
+            var http_request = new XMLHttpRequest();
+            http_request.overrideMimeType('application/json');
+            http_request.onreadystatechange = function(){
+                if (http_request.readyState === 4  ){
+                    try{
+                        var json = JSON.parse(http_request.responseText);
+                        var scale = json.scale;
+                        for (entry in scale) {
+                            try {
+                                if(document.getElementById(entry).type === 'checkbox'){
+                                    document.getElementById(entry).checked = scale[entry];
+                                    enableAuthFields(document.getElementById(entry));
+                                }else
+                                    document.getElementById(entry).value = scale[entry];
+                            }catch (e){}
+                        }
+                        var server = json.server;
+                        for (entry in server) {
+                            try {
+                                document.getElementById(entry).value=server[entry];
+                            }catch (e){}
+                        }
+                    }catch(e){
+                        alert(e.toString());
+                    }finally {
+                        document.body.style.visibility = 'visible';
+                    }
+                }
+            };
+            http_request.open("GET", "/settings.json", true);
+            http_request.send(null);
+        }
+        window.onload = function () {
+            load("microajax.js", "js", function () {
+                GetSettings();
+                setValues("/sv");
+            });
+        };
+        function load(e, t, n) {
+            if ("js" === t) {
+                var a = document.createElement("script");
+                a.src = e,
+                    a.type = "text/javascript",
+                    a.async = !1,
+                    a.onload = function () { n() },
+                    document.getElementsByTagName("head")[0].appendChild(a)
+            } else if ("css" === t) {
+                var a = document.createElement("link");
+                a.href = e,
+                    a.rel = "stylesheet",
+                    a.type = "text/css",
+                    a.async = !1,
+                    a.onload = function () { n() },
+                    document.getElementsByTagName("head")[0].appendChild(a)
+            }
+        }
+        function openSDB() {
+            var url = "https://"+document.getElementById("id_host").value+"/scale.php?code=" + document.getElementById("id_pin").value;
+            var win = window.open(url, '_blank');
+            win.focus();
+        }
+        function enableAuthFields(check){
+            if(check.checked){
+                document.getElementById("id_table_net").style.display = "none";
+            }else {
+                document.getElementById("id_table_net").style.display = "";
+            }
+        }
+        function submitFormNet(f) {
+            var form = document.getElementById(f);
+            var formData = new FormData(form);
+            var request = new XMLHttpRequest();
+            request.onreadystatechange = function(){
+                if (this.readyState === 4 ){
+                    if (this.status === 200){
+                        var rec = confirm("Пересоеденится с новыми настройками");
+                        if(rec){
+                            request.open('GET','/rc',true);
+                            request.send(null);
+                        }
+                    }else if (this.status === 400){
+                        alert("Ошибка при сохранении настроек")
+                    }
+                }
+            };
+            request.open('POST','/settings.html',true);
+            //request.setRequestHeader('x-SETNET', 'set');
+            request.send(formData);
+        }
+        function submitFormServer() {
+            var form = document.getElementById("form_server_id");
+            var formData = new FormData(form);
+            var request = new XMLHttpRequest();
+            request.onreadystatechange = function(){
+                if (this.readyState === 4 ){
+                    if (this.status === 200){
+                        alert("OK")
+                    }else if (this.status === 400){
+                        alert("ERROR")
+                    }
+                }
+            };
+            request.open('POST','/settings.html',true);
+            request.send(formData);
+        }
+    </script>
+</head>
+<body style="visibility: hidden">
+<a href="/"  class="btn btn--s btn--blue">&lt;</a>&nbsp;&nbsp;<strong>Настройки</strong>
+<hr>
+<fieldset>
+    <details><summary>Конфигурация сети</summary>
+        <br>
+        <h5 align='left'><b>Точка доступа WiFi роутера</b></h5>
+        <form id="form_id" action='javascript:submitFormNet("form_id")'>
+            Получать IP:
+            <input type="checkbox" id="id_auto" name="auto" onclick='enableAuthFields(this);'>
+            <div id="id_ip"></div>
+            <table id="id_table_net" >
+                <tr>
+                    <td>IP:</td>
+                    <td><input id="id_lan_ip" type="text" name="lan_ip"  onfocus="setOnBlur(this)"></td>
+                </tr>
+                <tr>
+                    <td>ШЛЮЗ:</td>
+                    <td><input id="id_gateway" type="text" name="gateway"  onfocus="setOnBlur(this)"></td>
+                </tr>
+                <tr>
+                    <td>МАСКА:</td>
+                    <td><input id="id_subnet" type="text" name="subnet"  onfocus="setOnBlur(this)"></td>
+                </tr>
+            </table>
+            <table>
+                <tr>
+                    <td>СЕТЬ:</td>
+                    <td><input id="id_ssid" name="ssid" required placeholder='имя сети'></td>
+                </tr>
+                <tr>
+                    <td>КЛЮЧ:</td>
+                    <td><input id="id_key" type="password"  name="key" placeholder='пароль'></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td><input type='submit' value='СОХРАНИТЬ' /></td>
+                </tr>
+            </table>
+        </form>
+    </details>
+</fieldset><br/>
+<fieldset style="width: auto">
+    <details><summary>Общии настройки</summary>
+        <br>
+        <form action='javascript:sendDateTime()'>
+            <h5 align='left'><b>Установка дата время</b></h5>
+            <table>
+                <tr>
+                    <td><h5 id='id_date'>дата время</h5></td>
+                    <td><input type='submit' name="data" value='УСТАНОВИТЬ'/></td>
+                </tr>
+            </table>
+        </form>
+        <hr>
+        <form id="form_server_id" action='javascript:submitFormServer()'>
+            <h5>Настройки база данных интернет</h5>
+            <table >
+                <tr>
+                    <td>СЕРВЕР:</td>
+                    <td ><input id="id_host" name="host" placeholder='сервер'></td>
+                </tr>
+                <tr>
+                    <td>ПИН:</td>
+                    <td><input id="id_pin" name="pin" placeholder='пин весов'></td>
+                </tr>
+                <tr>
+                    <td><a href="javascript:openSDB();">открыть</a></td>
+                    <td><input id="id_submit_code" type='submit' value='СОХРАНИТЬ'/></td>
+                </tr>
+            </table>
+        </form>
+        <hr>
+        <form method='POST'>
+            <h5>Доступ к настройкам</h5>
+            <table>
+                <tr>
+                    <td>ИМЯ:</td>
+                    <td><input id="id_name_admin" name="name_admin" placeholder='имя админ'></td>
+                </tr>
+                <tr>
+                    <td>ПАРОЛЬ:</td>
+                    <td><input type="password" id="id_pass_admin" name="pass_admin" placeholder='пароль админ'></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td><input type='submit' value='СОХРАНИТЬ'/></td>
+                </tr>
+            </table>
+        </form>
+    </details>
+</fieldset><br/>
+<fieldset>
+    <details>
+        <summary>Информация</summary>
+        <br>
+        <table>
+            <tr><td><h5>Имя хоста:</h5></td><td align="right"><h5 id="id_local_host"></h5></td></tr>
+        </table>
+        <hr>
+        <h5 align='left'><b>Точка доступа весов</b></h5>
+        <table>
+            <tr><td id="id_ap_ssid"></td><td align="right" id="id_ap_ip"></td></tr>
+        </table>
+        <hr>
+        <table><tr><td>Пломба:</td><td align="right"><div id="sl_id"></div></td></tr></table>
+        <hr>
+        <a href='/calibr.html'>калибровка</a>
+    </details>
+</fieldset>
+<hr>
+<footer align="center">2018 © Powered by KONST</footer>
+</body>
+</html>
